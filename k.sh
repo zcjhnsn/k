@@ -168,6 +168,10 @@ k () {
     K_COLOR_OW=$(_k_bsd_to_ansi $LSCOLORS[21] $LSCOLORS[22])
   fi
 
+  if [[ -n $BRCOLOR ]]; then
+    K_COLOR_BR=$(_k_bsd_to_ansi $BRCOLOR[1] $BRCOLOR[2])
+  fi
+
   # read colors if linux and $LS_COLORS is defined
   # if [[ $(uname) == 'Linux' && -n $LS_COLORS ]]; then
 
@@ -486,7 +490,7 @@ k () {
         # If we're not in a repo, still check each directory if it's a repo, and
         # then mark appropriately
         if (( INSIDE_WORK_TREE == 0 )); then
-          REPOBRANCH=$(command git --git-dir="$GIT_TOPLEVEL/.git" --work-tree="${NAME}" rev-parse --abbrev-ref HEAD 2>/dev/null)
+          REPOBRANCH="($(command git --git-dir="$GIT_TOPLEVEL/.git" --work-tree="${NAME}" rev-parse --abbrev-ref HEAD 2>/dev/null))"
           if (( IS_DIRECTORY )); then
             if command git --git-dir="$GIT_TOPLEVEL/.git" --work-tree="${NAME}" diff --stat --quiet --ignore-submodules HEAD &>/dev/null # if dirty
               then REPOMARKER=$'\e[38;5;46m|\e[0m' # Show a green vertical bar for clean
@@ -521,8 +525,13 @@ k () {
       # Unfortunately, the choices for quoting which escape ANSI color sequences are q & qqqq; none of q- qq qqq work.
       # But we don't want to quote '.'; so instead we escape the escape manually and use q-
       NAME="${${NAME##*/}//$'\e'/\\e}"    # also propagate changes to SYMLINK_TARGET below
-
-      if [[ $IS_DIRECTORY == 1 ]]; then
+      
+      if [[ "$LS_COLORS" ]] && ls --color -d . &>/dev/null; then
+          # We are using an ls that supports using colors from $LS_COLORS (probably GNU ls here)
+         pushd "${base_dir}" &>/dev/null
+         NAME="$(ls --color=always -d "$NAME")"
+         popd &>/dev/null
+      elif [[ $IS_DIRECTORY == 1 ]]; then
         if [[ $IS_WRITABLE_BY_OTHERS == 1 ]]; then
           if [[ $HAS_STICKY_BIT == 1 ]]; then
             NAME=$'\e['"$K_COLOR_TW"'m'"$NAME"$'\e[0m';
@@ -563,6 +572,15 @@ k () {
 _k_bsd_to_ansi() {
   local foreground=$1 background=$2 foreground_ansi background_ansi
   case $foreground in
+    A) foreground_ansi="1;30";;
+    B) foreground_ansi="1;31";;
+    C) foreground_ansi="1;32";;
+    D) foreground_ansi="1;33";;
+    E) foreground_ansi="1;34";;
+    F) foreground_ansi="1;35";;
+    G) foreground_ansi="1;36";;
+    H) foreground_ansi="1;37";;
+    X) foreground_ansi="1;0";;
     a) foreground_ansi=30;;
     b) foreground_ansi=31;;
     c) foreground_ansi=32;;
@@ -583,6 +601,15 @@ _k_bsd_to_ansi() {
     g) background_ansi=46;;
     h) background_ansi=47;;
     x) background_ansi=0;;
+    A) foreground_ansi="1;40";;
+    B) foreground_ansi="1;41";;
+    C) foreground_ansi="1;42";;
+    D) foreground_ansi="1;43";;
+    E) foreground_ansi="1;44";;
+    F) foreground_ansi="1;45";;
+    G) foreground_ansi="1;46";;
+    H) foreground_ansi="1;47";;
+    X) foreground_ansi="1;0";;
   esac
   printf "%s;%s" $background_ansi $foreground_ansi
 }
